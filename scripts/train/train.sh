@@ -29,6 +29,21 @@ export WORLD_SIZE=${WORLD_SIZE:-1}
 
 target_cache_dir=${target_cache_dir:-${HOME}/.cache/deepspec/qwen3_4b_target_cache}
 
+# Pre-flight check: target cache must exist before training.
+target_cache_manifest="${target_cache_dir}/manifest.json"
+if [ ! -f "${target_cache_manifest}" ]; then
+    echo "ERROR: Target cache not found at ${target_cache_manifest}"
+    echo "Run data preparation first:"
+    echo "  bash scripts/data/prepare_data.sh"
+    echo "Or, if you already have training JSONL:"
+    echo "  python scripts/data/prepare_target_cache.py \\"
+    echo "    --config config/dspark/dspark_qwen3_4b.py \\"
+    echo "    --train-data-path <your_train_data.jsonl> \\"
+    echo "    --output-dir ${target_cache_dir} \\"
+    echo "    --local-batch-size 16"
+    exit 1
+fi
+
 # --opts overrides any config field by dotted key path: --opts "<key.path>=<value>".
 # Values are parsed as Python scalars (int/float/bool/str). Repeat the flag to set
 # multiple fields, e.g.:
