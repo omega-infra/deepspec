@@ -11,6 +11,7 @@ from deepspec.modeling.eagle3.qwen3.config import (
     build_draft_config as build_qwen3_eagle3_config,
 )
 from deepspec.trainer.base_trainer import BaseTrainer
+from deepspec.utils import resolve_model_path
 
 
 class Qwen3Eagle3Trainer(BaseTrainer):
@@ -19,12 +20,9 @@ class Qwen3Eagle3Trainer(BaseTrainer):
     def build_models(self):
         model_args = self.args.model
 
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_args.target_model_name_or_path,
-        )
-        target_config = AutoConfig.from_pretrained(
-            model_args.target_model_name_or_path,
-        )
+        target_path = resolve_model_path(model_args.target_model_name_or_path)
+        tokenizer = AutoTokenizer.from_pretrained(target_path)
+        target_config = AutoConfig.from_pretrained(target_path)
 
         draft_model = self._build_draft_model(
             target_config=target_config,
@@ -33,7 +31,7 @@ class Qwen3Eagle3Trainer(BaseTrainer):
         draft_model = draft_model.to(device=self.device, dtype=self.precision_dtype)
 
         target_model = AutoModelForCausalLM.from_pretrained(
-            model_args.target_model_name_or_path,
+            target_path,
             dtype=self.precision_dtype,
         ).to(device="cpu").eval()
         target_embed_tokens = target_model.get_input_embeddings()

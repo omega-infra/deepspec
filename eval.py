@@ -5,7 +5,7 @@ import torch
 from transformers import AutoConfig
 from deepspec.eval.dspark import Gemma4DSparkEvaluator, Qwen3DSparkEvaluator
 from deepspec.eval.eagle3 import Gemma4Eagle3Evaluator, Qwen3Eagle3Evaluator
-from deepspec.utils import CustomJSONEncoder
+from deepspec.utils import CustomJSONEncoder, resolve_model_path
 
 EVALUATORS = {
     "Qwen3DSparkModel": Qwen3DSparkEvaluator,
@@ -50,7 +50,8 @@ def parse_args():
 def main(local_rank: int, args):
     if local_rank == 0:
         print(json.dumps(args, indent=4, cls=CustomJSONEncoder), flush=True)
-    draft_config = AutoConfig.from_pretrained(args.draft_name_or_path)
+    draft_path = resolve_model_path(args.draft_name_or_path)
+    draft_config = AutoConfig.from_pretrained(draft_path)
     evaluator_cls = EVALUATORS[draft_config.architectures[0]]
     evaluator = evaluator_cls(local_rank, args)
     evaluator.evaluate()

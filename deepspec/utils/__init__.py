@@ -13,7 +13,7 @@ from .distributed import (
     print_on_global_main,
     print_on_local_main,
 )
-from .io import ensure_dir, safe_symlink
+from .io import ensure_dir, resolve_model_path, safe_symlink
 from .metrics import add_metric, flush, reset
 from .optim import BF16Optimizer
 
@@ -82,6 +82,7 @@ __all__ = [
     "print_on_global_main",
     "print_on_local_main",
     "reset",
+    "resolve_model_path",
     "safe_symlink",
     "seed_all",
 ]

@@ -20,6 +20,7 @@ from deepspec.utils import (
     is_global_main_process,
     print_on_global_main,
     print_on_local_main,
+    resolve_model_path,
 )
 from deepspec.trainer.ckpt_manager import (
     discover_latest_checkpoint,
@@ -244,12 +245,9 @@ class BaseTrainer:
     def build_models(self):
         model_args = self.args.model
 
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_args.target_model_name_or_path,
-        )
-        target_config = AutoConfig.from_pretrained(
-            model_args.target_model_name_or_path,
-        )
+        target_path = resolve_model_path(model_args.target_model_name_or_path)
+        tokenizer = AutoTokenizer.from_pretrained(target_path)
+        target_config = AutoConfig.from_pretrained(target_path)
 
         draft_model = self._build_draft_model(
             target_config=target_config,
@@ -260,7 +258,7 @@ class BaseTrainer:
         # Training only uses the target checkpoint to initialize frozen draft
         # embeddings and lm_head weights.
         target_model = AutoModelForCausalLM.from_pretrained(
-            model_args.target_model_name_or_path,
+            target_path,
             dtype=self.precision_dtype,
         ).to(device="cpu").eval()
         target_embed_tokens = target_model.get_input_embeddings()

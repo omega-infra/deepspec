@@ -16,6 +16,7 @@ from deepspec.eval.base_evaluator import (
 from deepspec.modeling.eagle3 import extract_eagle3_context_feature
 from deepspec.modeling.eagle3.gemma4 import Gemma4Eagle3Model
 from deepspec.modeling.eagle3.qwen3 import Qwen3Eagle3Model
+from deepspec.utils import resolve_model_path
 from deepspec.utils.sampling import logits_to_probs, sample_tokens
 
 
@@ -41,21 +42,23 @@ class Qwen3Eagle3Evaluator(BaseEvaluator):
         return int(self.draft_model.ttt_length)
 
     def build_models(self) -> tuple[object, Qwen3Eagle3Model, AutoTokenizer]:
+        target_path = resolve_model_path(self.args.target_name_or_path)
+        draft_path = resolve_model_path(self.args.draft_name_or_path)
         target_model = AutoModelForCausalLM.from_pretrained(
-            self.args.target_name_or_path,
+            target_path,
             dtype=torch.bfloat16,
             attn_implementation=self.EVAL_ATTN_IMPLEMENTATION,
         ).to(device=self.device).eval()
 
         draft_model = self.draft_model_cls.from_pretrained(
-            self.args.draft_name_or_path,
+            draft_path,
             dtype=torch.bfloat16,
             attn_implementation=self.EVAL_ATTN_IMPLEMENTATION,
         ).to(self.device).eval()
         draft_model.target_layer_ids = [int(x) for x in draft_model.target_layer_ids]
         assert_no_final_target_layer(target_model, draft_model.target_layer_ids)
 
-        tokenizer = AutoTokenizer.from_pretrained(self.args.target_name_or_path)
+        tokenizer = AutoTokenizer.from_pretrained(target_path)
         return target_model, draft_model, tokenizer
 
     def _init_context(

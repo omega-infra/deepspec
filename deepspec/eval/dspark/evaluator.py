@@ -22,7 +22,7 @@ from deepspec.eval.dspark.draft_ops import (
 from deepspec.modeling.dspark.common import extract_context_feature
 from deepspec.modeling.dspark.gemma4 import Gemma4DSparkModel
 from deepspec.modeling.dspark.qwen3 import Qwen3DSparkModel
-from deepspec.utils import jsonable
+from deepspec.utils import jsonable, resolve_model_path
 
 
 CONFIDENCE_NUM_BINS = 20
@@ -66,20 +66,22 @@ class Qwen3DSparkEvaluator(BaseEvaluator):
         )
 
     def build_models(self) -> tuple[object, Qwen3DSparkModel, AutoTokenizer]:
+        target_path = resolve_model_path(self.args.target_name_or_path)
+        draft_path = resolve_model_path(self.args.draft_name_or_path)
         target_model = AutoModelForCausalLM.from_pretrained(
-            self.args.target_name_or_path,
+            target_path,
             dtype=torch.bfloat16,
             attn_implementation=self.EVAL_ATTN_IMPLEMENTATION,
         ).to(device=self.device).eval()
 
         draft_model = self.draft_model_cls.from_pretrained(
-            self.args.draft_name_or_path,
+            draft_path,
             dtype=torch.bfloat16,
             attn_implementation=self.EVAL_ATTN_IMPLEMENTATION,
         ).to(self.device).eval()
         assert_no_final_target_layer(target_model, draft_model.target_layer_ids)
         assert 0.0 <= float(self.args.confidence_threshold) <= 1.0
-        tokenizer = AutoTokenizer.from_pretrained(self.args.target_name_or_path)
+        tokenizer = AutoTokenizer.from_pretrained(target_path)
         return target_model, draft_model, tokenizer
 
     def _init_context(
