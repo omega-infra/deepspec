@@ -151,17 +151,22 @@ def normalize_conversations(row: dict) -> dict:
     return {"id": row["id"], "conversations": conversations}
 
 
-def validate_conversations(row: dict, row_number: int) -> None:
+def validate_conversations(row: dict, row_number: int) -> bool:
     conversations = row["conversations"]
     if not conversations:
-        raise ValueError(f"row {row_number} produced no conversations.")
+        print(f"WARNING: skipping row {row_number} — no valid conversations.")
+        return False
     if conversations[0]["role"] != "user":
-        raise ValueError(f"row {row_number} does not start with a user message.")
+        print(f"WARNING: skipping row {row_number} — does not start with a user message.")
+        return False
     for message in conversations:
         if message["role"] not in {"user", "assistant"}:
-            raise ValueError(f"row {row_number} has invalid role: {message['role']}")
+            print(f"WARNING: skipping row {row_number} — invalid role: {message['role']}.")
+            return False
         if not isinstance(message["content"], str) or not message["content"]:
-            raise ValueError(f"row {row_number} has invalid message content.")
+            print(f"WARNING: skipping row {row_number} — invalid message content.")
+            return False
+    return True
 
 
 def user_turns(row: dict) -> list[str]:
@@ -175,25 +180,35 @@ def user_turns(row: dict) -> list[str]:
 def write_train_jsonl(dataset, output_path: Path) -> int:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     count = 0
+    skipped = 0
     with output_path.open("w", encoding="utf-8") as handle:
         for row_number, row in enumerate(dataset, start=1):
             converted = normalize_conversations(row)
-            validate_conversations(converted, row_number)
+            if not validate_conversations(converted, row_number):
+                skipped += 1
+                continue
             handle.write(json.dumps(converted, ensure_ascii=False) + "\n")
             count += 1
+    if skipped:
+        print(f"Skipped {skipped} invalid rows during train split.")
     return count
 
 
 def write_eval_jsonl(dataset, output_path: Path) -> int:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     count = 0
+    skipped = 0
     with output_path.open("w", encoding="utf-8") as handle:
         for row_number, row in enumerate(dataset, start=1):
             converted = normalize_conversations(row)
-            validate_conversations(converted, row_number)
+            if not validate_conversations(converted, row_number):
+                skipped += 1
+                continue
             turns = user_turns(converted)
             handle.write(json.dumps({"turns": turns}, ensure_ascii=False) + "\n")
             count += 1
+    if skipped:
+        print(f"Skipped {skipped} invalid rows during eval split.")
     return count
 
 
