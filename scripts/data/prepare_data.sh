@@ -5,6 +5,8 @@ model_path=Qwen/Qwen3-4B
 config_path=config/dspark/dspark_qwen3_4b.py
 
 dataset_name=mlabonne/open-perfectblend
+local_data_dir=${LOCAL_DATA_DIR:-/mnt/data}
+local_data_path=""
 test_size=0.05
 train_split_path=train_datasets/perfectblend_train.jsonl
 eval_data_dir=eval_datasets
@@ -33,13 +35,39 @@ for ((worker_id = 0; worker_id < num_workers; worker_id++)); do
     server_addresses+=("${server_host}:$((start_port + worker_id))")
 done
 
-echo "Step 1/3: downloading and splitting ${dataset_name}"
-python scripts/data/download_and_split.py \
-    --dataset-name "${dataset_name}" \
-    --test-size "${test_size}" \
-    --train-output-path "${train_split_path}" \
-    --test-output-dir "${eval_data_dir}" \
-    --skip-existing
+# Check if dataset already exists locally; if so, skip HuggingFace download.
+# Expected layout: $local_data_dir/<dataset_name_last_segment>/
+#                  e.g. /mnt/data/open-perfectblend/
+dataset_local_name=$(basename "${dataset_name}")
+local_candidate="${local_data_dir}/${dataset_local_name}"
+if [ -d "${local_candidate}" ]; then
+    local_data_path="${local_candidate}"
+elif [ -f "${local_data_dir}/${dataset_local_name}.parquet" ]; then
+    local_data_path="${local_data_dir}/${dataset_local_name}.parquet"
+elif [ -f "${local_data_dir}/${dataset_local_name}.json" ]; then
+    local_data_path="${local_data_dir}/${dataset_local_name}.json"
+elif [ -f "${local_data_dir}/${dataset_local_name}.jsonl" ]; then
+    local_data_path="${local_data_dir}/${dataset_local_name}.jsonl"
+fi
+
+echo "Step 1/3: splitting dataset"
+if [ -n "${local_data_path}" ]; then
+    echo "  Found local dataset at: ${local_data_path}"
+    python scripts/data/download_and_split.py \
+        --local-data-path "${local_data_path}" \
+        --test-size "${test_size}" \
+        --train-output-path "${train_split_path}" \
+        --test-output-dir "${eval_data_dir}" \
+        --skip-existing
+else
+    echo "  Local dataset not found in ${local_data_dir}, downloading from HuggingFace: ${dataset_name}"
+    python scripts/data/download_and_split.py \
+        --dataset-name "${dataset_name}" \
+        --test-size "${test_size}" \
+        --train-output-path "${train_split_path}" \
+        --test-output-dir "${eval_data_dir}" \
+        --skip-existing
+fi
 
 mkdir -p "$(dirname "${train_data_path}")"
 

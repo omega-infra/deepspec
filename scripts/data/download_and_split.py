@@ -28,6 +28,16 @@ def parse_args() -> argparse.Namespace:
         help="Hugging Face dataset name.",
     )
     parser.add_argument(
+        "--local-data-path",
+        type=Path,
+        default=None,
+        help=(
+            "Local dataset directory or file. If set, load from here instead of "
+            "downloading from HuggingFace. Supports saved dataset dirs, parquet, "
+            "or json files."
+        ),
+    )
+    parser.add_argument(
         "--split",
         default="train",
         help="Hugging Face split to load.",
@@ -107,7 +117,20 @@ def add_index(row: dict, idx: int) -> dict:
 def load_source_dataset(args: argparse.Namespace):
     from datasets import load_dataset
 
-    dataset = load_dataset(args.dataset_name, split=args.split)
+    if args.local_data_path is not None:
+        local_path = str(args.local_data_path)
+        print(f"Loading dataset from local path: {local_path}")
+        if args.local_data_path.is_dir():
+            dataset = load_dataset(local_path, split=args.split)
+        elif local_path.endswith(".json") or local_path.endswith(".jsonl"):
+            dataset = load_dataset("json", data_files=local_path, split=args.split)
+        elif local_path.endswith(".parquet"):
+            dataset = load_dataset("parquet", data_files=local_path, split=args.split)
+        else:
+            dataset = load_dataset(local_path, split=args.split)
+    else:
+        print(f"Downloading dataset from HuggingFace: {args.dataset_name}")
+        dataset = load_dataset(args.dataset_name, split=args.split)
     if args.sample_size is not None and args.sample_size < len(dataset):
         dataset = dataset.select(range(args.sample_size))
     dataset = dataset.map(add_index, with_indices=True)
