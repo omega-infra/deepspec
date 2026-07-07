@@ -105,8 +105,12 @@ def check_output_paths(args: argparse.Namespace) -> bool:
             print(f"skip existing output: {path}")
         return True
 
+    # Partial outputs exist: remove them and regenerate all.
     joined_paths = ", ".join(str(path) for path in existing_paths)
-    raise FileExistsError(f"Output JSONL already exists: {joined_paths}")
+    print(f"Partial output exists ({joined_paths}), regenerating all outputs.")
+    for path in existing_paths:
+        path.unlink()
+    return False
 
 
 def add_index(row: dict, idx: int) -> dict:
