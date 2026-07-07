@@ -1,0 +1,27 @@
+[project]
+name = "deepspec"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "datasets==4.8.5",
+    "matplotlib==3.10.9",
+    "numpy==2.4.4",
+    "openai==2.6.1",
+    "prettytable==3.17.0",
+    "pyyaml==6.0.3",
+    "safetensors==0.7.0",
+    "sentencepiece==0.2.1",
+    "tensorboard==2.20.0",
+    "torch==2.9.1",
+    "tqdm==4.67.3",
+    "transformers==5.10.2",
+    "triton==3.5.1",
+    "typing-extensions==4.15.0",
+]
+
+[tool.uv]
+find-links = ["/mnt/env/deepspec-env"]
+offline = true
+link-mode = "copy"
