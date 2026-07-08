@@ -4,9 +4,37 @@ set -euo pipefail
 # Requires SGLang to be installed separately (not in requirements.txt):
 #   pip install "sglang[all]"
 # See https://docs.sglang.ai/get_started/install.html for details.
+#
+# RECOMMENDED: Install sglang in an isolated conda environment to avoid polluting
+# the main environment's pip packages:
+#
+#   conda create -n sglang-env python=3.10
+#   conda activate sglang-env
+#   pip install "sglang[all]"
+#
+# Then run this script with the conda environment activated:
+#   conda activate sglang-env
+#   bash scripts/data/launch_sglang_server.sh
+#
+# Optional: validate conda environment is activated
+if [ -z "${CONDA_DEFAULT_ENV:-}" ]; then
+    echo "Warning: No conda environment is currently activated."
+    echo "Consider using an isolated conda environment to avoid polluting system pip packages."
+    echo ""
+    echo "Create one with:"
+    echo "  conda create -n sglang-env python=3.10"
+    echo ""
+    echo "Then activate and install sglang:"
+    echo "  conda activate sglang-env"
+    echo "  pip install \"sglang[all]\""
+    echo ""
+    echo "Finally, run this script:"
+    echo "  bash scripts/data/launch_sglang_server.sh"
+    echo ""
+fi
 
 model_path=Qwen/Qwen3-4B
-num_workers=8
+num_workers=${SGLANG_WOEKER_NUM:-2}
 start_port=30000
 start_nccl_port=31000
 host=0.0.0.0

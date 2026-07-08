@@ -46,11 +46,25 @@ eval_datasets/perfectblend.jsonl
 
 ## Step 2: Regenerate Answers With Qwen3-4B
 
-This step serves the target model and regenerates assistant answers against it. Any OpenAI-compatible inference engine works (SGLang, vLLM, TGI, etc.) — the example below uses [SGLang](https://github.com/sgl-project/sglang), but you can swap in whatever engine you prefer as long as it exposes an OpenAI-compatible `/v1` endpoint. SGLang is not in `requirements.txt`; install it separately, e.g. `pip install "sglang[all]"`.
+This step serves the target model and regenerates assistant answers against it. Any OpenAI-compatible inference engine works (SGLang, vLLM, TGI, etc.) — the example below uses [SGLang](https://github.com/sgl-project/sglang), but you can swap in whatever engine you prefer as long as it exposes an OpenAI-compatible `/v1` endpoint. SGLang is not in `requirements.txt`; install it separately to avoid polluting the main environment.
 
-Start local sglang servers in one terminal:
+### Recommended: Isolated Conda Environment
+
+To avoid polluting your main pip environment, install SGLang in a dedicated conda environment:
 
 ```bash
+# Create an isolated conda environment for sglang
+conda create -n sglang-env python=3.10
+
+# Activate it and install sglang
+conda activate sglang-env
+pip install "sglang[all]"
+```
+
+Then start the sglang servers in one terminal (with the conda environment activated):
+
+```bash
+conda activate sglang-env
 bash scripts/data/launch_sglang_server.sh
 ```
 
@@ -59,6 +73,19 @@ By default this starts eight `Qwen/Qwen3-4B` workers on ports `30000` to `30007`
 ```text
 logs/sglang_qwen3_4b/
 ```
+
+### Alternative: Global Installation
+
+If you prefer not to use a separate environment, you can install sglang globally:
+
+```bash
+pip install "sglang[all]==0.4.10"
+bash scripts/data/launch_sglang_server.sh
+```
+
+Note: This may modify your main environment's pip package versions.
+
+### Generate Train Data
 
 In another terminal, regenerate the assistant answers:
 
